@@ -1,0 +1,17 @@
+# reference material, not my code
+project draft/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+*.pdf
+.remember/
+
+# personal prep material, kept out of the public repo
+PHASES.md
+interview-prep.html
