@@ -11,6 +11,7 @@ venv/
 .DS_Store
 *.pdf
 .remember/
+.vscode/settings.json
 
 # personal prep material, kept out of the public repo
 PHASES.md
