@@ -1,3 +1,4 @@
+import hmac
 from fastapi import Request, HTTPException
 
 
@@ -10,6 +11,7 @@ async def require_api_key(request: Request) -> None:
         return  # auth disabled when no key is configured
     # look for the key in the request headers, empty string if missing
     key = request.headers.get("X-API-Key", "")
-    # if it doesn't match, stop here and send back 401 unauthorized
-    if key != config.api_key:
+    # compare_digest instead of == because == stops at the first wrong
+    # character, and the time that takes leaks how much of the key was right
+    if not hmac.compare_digest(key, config.api_key):
         raise HTTPException(status_code=401, detail="Invalid or missing API key.")
