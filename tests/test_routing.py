@@ -31,6 +31,25 @@ def test_a_valid_key_gets_past_auth():
     assert response.status_code != 401
 
 
+def test_routes_say_503_not_500_before_startup_finishes():
+    # the app accepts connections before lifespan has connected redis, so there
+    # is a real window on every deploy where requests land early. 500 would tell
+    # the caller we're broken; 503 + Retry-After tells it to come back, which is
+    # what's actually true.
+    response = client.get("/api/result/some-job", headers={"X-API-Key": "test-key-12345"})
+    assert response.status_code == 503
+    assert response.headers["Retry-After"] == "2"
+
+
+def test_the_database_routes_say_503_too():
+    # /api/reports never touches redis, so it goes through get_pool() instead.
+    # both accessors have to answer the same way or half the API lies about why
+    # it can't respond.
+    response = client.get("/api/reports", headers={"X-API-Key": "test-key-12345"})
+    assert response.status_code == 503
+    assert response.headers["Retry-After"] == "2"
+
+
 def test_health_needs_no_key():
     # the load balancer can't send one
     assert client.get("/health").status_code == 200

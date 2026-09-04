@@ -1,4 +1,5 @@
 import asyncpg
+from fastapi import HTTPException
 from app.config import Config
 
 # module-level variable that holds our one shared db pool
@@ -29,5 +30,14 @@ async def close_pool() -> None:
 # errors out if someone tries to use it before init_pool() ran
 def get_pool() -> asyncpg.Pool:
     if _pool is None:
-        raise RuntimeError("Database pool not initialized")
+        # 503 rather than 500, same reasoning as get_redis() in runtime.py: the
+        # server takes requests before startup has opened this pool, and "come
+        # back in a second" is true where "something is broken" isn't.
+        # written out here instead of shared with runtime.py so importing this
+        # module doesn't drag in runtime's config load as a side effect.
+        raise HTTPException(
+            status_code=503,
+            detail="The database is still starting up. Try again in a moment.",
+            headers={"Retry-After": "2"},
+        )
     return _pool

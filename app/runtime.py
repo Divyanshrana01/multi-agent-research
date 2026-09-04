@@ -34,17 +34,32 @@ def clear_runtime() -> None:
     _graph = None
 
 
+def _not_ready(what: str) -> HTTPException:
+    """
+    Raised when something is asked for before lifespan has finished setting it
+    up. 503 rather than 500 on purpose: 500 means "this is broken", and a
+    client that reads it gives up or wakes someone. 503 with Retry-After means
+    "not ready yet, ask again", which is the truth for the couple of seconds a
+    container spends starting.
+    """
+    return HTTPException(
+        status_code=503,
+        detail=f"{what} is still starting up. Try again in a moment.",
+        headers={"Retry-After": "2"},
+    )
+
+
 def get_redis() -> aioredis.Redis:
-    # same idea as get_pool() in pool.py: fail with a clear message instead of
-    # an AttributeError on None somewhere deep in a handler
+    # same idea as get_pool() in pool.py: fail clearly instead of an
+    # AttributeError on None somewhere deep in a handler
     if _redis_client is None:
-        raise RuntimeError("Redis client not initialized")
+        raise _not_ready("Redis")
     return _redis_client
 
 
 def get_graph():
     if _graph is None:
-        raise RuntimeError("Agent graph not initialized")
+        raise _not_ready("The agent graph")
     return _graph
 
 
