@@ -1,0 +1,99 @@
+/*
+  The single source of colour, type, spacing and timing.
+  Components read these and never hard-code a value, which is what makes
+  theming a token swap instead of an audit.
+*/
+
+:root {
+  /* surfaces — blue-biased neutrals, not grey. this is what keeps the dark
+     theme from reading as the default near-black dashboard. */
+  --bg: #080d18;
+  --surface: #0e1526;
+  --surface-2: #131c32;
+  --surface-3: #18223c;
+
+  --line: rgba(148, 176, 232, 0.11);
+  --line-2: rgba(148, 176, 232, 0.2);
+  --sheen: rgba(255, 255, 255, 0.045);
+
+  --text: #e7edfa;
+  --text-2: #a3b3d1;
+  --text-3: #6d7f9f;
+
+  /* interactive */
+  --accent: #7d9cff;
+  --accent-ink: #06101f; /* text on top of the accent */
+  --accent-soft: rgba(125, 156, 255, 0.14);
+
+  /* status — hue is reserved for these. a control never uses them, so amber
+     always means running and green always means finished. */
+  --run: #f0a94b;
+  --done: #45d4a8;
+  --reused: #a98bfa;
+  --blocked: #f07aa4;
+  --failed: #ff6f6f;
+
+  --run-soft: rgba(240, 169, 75, 0.16);
+  --done-soft: rgba(69, 212, 168, 0.18);
+  --reused-soft: rgba(169, 139, 250, 0.18);
+
+  /* type */
+  --sans: "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif: "Newsreader Variable", Georgia, "Times New Roman", serif;
+
+  /* 4px base, so no spacing lands on an arbitrary number */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* radius varies by role — a chip and a panel shouldn't share one value */
+  --r-chip: 999px;
+  --r-control: 7px;
+  --r-panel: 10px;
+
+  --t-fast: 120ms ease;
+  --t-move: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  --shadow-panel: 0 1px 0 var(--sheen) inset, 0 18px 40px -28px rgba(0, 0, 0, 0.9);
+}
+
+/*
+  Light is a deliberate counterpart, not an inversion. The accent is darkened
+  so it still passes contrast on a pale ground, and the status hues are
+  re-picked rather than reused — #45d4a8 on white is unreadable.
+*/
+:root[data-theme="light"] {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f6f8fb;
+  --surface-3: #eaeff5;
+
+  --line: #dde4ec;
+  --line-2: #c3cfdc;
+  --sheen: rgba(255, 255, 255, 0.9);
+
+  --text: #0f1e27;
+  --text-2: #44566a;
+  --text-3: #6f8296;
+
+  --accent: #3a52c4;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(58, 82, 196, 0.09);
+
+  --run: #a06000;
+  --done: #16714f;
+  --reused: #6742c8;
+  --blocked: #a52c73;
+  --failed: #b02a1e;
+
+  --run-soft: rgba(160, 96, 0, 0.12);
+  --done-soft: rgba(22, 113, 79, 0.12);
+  --reused-soft: rgba(103, 66, 200, 0.12);
+
+  --shadow-panel: 0 1px 2px rgba(15, 30, 39, 0.04), 0 8px 24px -18px rgba(15, 30, 39, 0.3);
+}

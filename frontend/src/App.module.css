@@ -1,0 +1,52 @@
+.main {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-5) var(--s-7);
+}
+
+.main:focus {
+  outline: none;
+}
+
+/* off-screen until focused, then it lands in the corner as a real control */
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: var(--s-2);
+  z-index: 100;
+  padding: 10px var(--s-4);
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--r-control);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.skip:focus {
+  left: var(--s-4);
+}
+
+.notFound {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  max-width: 52ch;
+  padding: var(--s-7) 0;
+}
+
+.notFound h1 {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.notFound p {
+  color: var(--text-2);
+  font-size: 14.5px;
+}
+
+@media (max-width: 860px) {
+  .main {
+    padding: var(--s-4) var(--s-4) var(--s-6);
+  }
+}

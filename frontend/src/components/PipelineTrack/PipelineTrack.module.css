@@ -1,0 +1,242 @@
+.run {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  padding: 15px var(--s-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.orb {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--text-3);
+  transition:
+    background var(--t-move),
+    box-shadow var(--t-move);
+}
+
+.orb[data-state="working"] {
+  background: var(--run);
+  box-shadow: 0 0 0 4px var(--run-soft);
+  animation: breathe 1.5s ease-in-out infinite;
+}
+
+.orb[data-state="done"] {
+  background: var(--done);
+  box-shadow: 0 0 0 4px var(--done-soft);
+}
+
+.orb[data-state="reused"] {
+  background: var(--reused);
+  box-shadow: 0 0 0 4px var(--reused-soft);
+}
+
+.orb[data-state="blocked"] {
+  background: var(--blocked);
+}
+
+.orb[data-state="failed"] {
+  background: var(--failed);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.jobId {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-chip);
+  padding: 3px 9px;
+}
+
+/* ---------- the track ---------- */
+
+.track {
+  position: relative;
+  padding: 30px var(--s-5) var(--s-5);
+}
+
+.rail {
+  position: absolute;
+  left: 44px;
+  right: 44px;
+  top: 42px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.rail i {
+  position: absolute;
+  inset: 0;
+  width: 34%;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--run), transparent);
+}
+
+/* the page's only ambient motion, and only while something is genuinely running */
+.track[data-state="working"] .rail i {
+  opacity: 1;
+  animation: travel 1.7s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes travel {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+.track[data-state="done"] .rail {
+  background: linear-gradient(90deg, var(--done), color-mix(in srgb, var(--done) 40%, transparent));
+}
+
+.nodes {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  list-style: none;
+}
+
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 9px;
+  padding: 0 6px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 2px solid var(--line-2);
+  /* the ring punches the rail out behind each dot */
+  box-shadow: 0 0 0 5px var(--bg);
+  transition:
+    background var(--t-move),
+    border-color var(--t-move);
+}
+
+.track[data-state="working"] .dot {
+  border-color: var(--run);
+}
+
+.track[data-state="done"] .dot {
+  background: var(--done);
+  border-color: var(--done);
+}
+
+/* the whole point of the cache-hit state: the stages visibly didn't run */
+.track[data-state="reused"] .node {
+  opacity: 0.38;
+}
+
+.nodeName {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nodeNote {
+  font-size: 11.5px;
+  color: var(--text-3);
+  line-height: 1.35;
+}
+
+/* ---------- banner ---------- */
+
+.banner {
+  display: flex;
+  gap: 11px;
+  margin: 0 var(--s-4) var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  font-size: 13px;
+}
+
+.bannerBar {
+  width: 2px;
+  border-radius: 2px;
+  flex: none;
+  background: var(--text-3);
+}
+
+.banner[data-kind="reused"] .bannerBar {
+  background: var(--reused);
+}
+
+.banner[data-kind="blocked"] .bannerBar {
+  background: var(--blocked);
+}
+
+.banner[data-kind="failed"] .bannerBar {
+  background: var(--failed);
+}
+
+.bannerTitle {
+  font-weight: 550;
+  margin-bottom: 2px;
+}
+
+.bannerBody {
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .nodes {
+    grid-template-columns: 1fr 1fr;
+    row-gap: var(--s-5);
+  }
+
+  .rail {
+    display: none;
+  }
+}

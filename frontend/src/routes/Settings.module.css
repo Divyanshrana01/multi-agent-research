@@ -1,0 +1,84 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  max-width: 620px;
+}
+
+.head {
+  margin-bottom: var(--s-1);
+}
+
+.title {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.label {
+  font-size: 14px;
+  color: var(--text-2);
+  margin-right: auto;
+}
+
+.ok {
+  font-size: 13px;
+  color: var(--done);
+}
+
+.hint {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin-top: var(--s-3);
+}
+
+.facts {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  overflow: hidden;
+}
+
+.fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: 9px var(--s-3);
+  background: var(--surface);
+}
+
+.fact dt {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.fact dd {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.fact dd[data-state="ok"] {
+  color: var(--done);
+}
+
+.fact dd[data-state="error"] {
+  color: var(--failed);
+}

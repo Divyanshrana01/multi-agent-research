@@ -1,0 +1,31 @@
+.diff {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  padding: var(--s-4);
+  max-height: 380px;
+  overflow: auto;
+  color: var(--text-2);
+}
+
+.line {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.line[data-kind="add"] {
+  color: var(--done);
+}
+
+.line[data-kind="del"] {
+  color: var(--failed);
+}
+
+.line[data-kind="file"] {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.line[data-kind="hunk"] {
+  color: var(--reused);
+}

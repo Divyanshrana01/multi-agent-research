@@ -1,0 +1,69 @@
+/* Reports are documents, so they get set for reading: serif, generous leading,
+   and a measure that stops around 70 characters. */
+
+.doc {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.72;
+  color: var(--text);
+  max-width: 70ch;
+}
+
+.doc h2 {
+  /* section headings drop back to the UI face — they're signposts, not prose */
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  margin: var(--s-5) 0 var(--s-2);
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc h2:first-child {
+  margin-top: 0;
+}
+
+.doc h3 {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  margin: var(--s-4) 0 6px;
+}
+
+.doc p {
+  margin: 0 0 13px;
+}
+
+.doc ul {
+  margin: 0 0 var(--s-3);
+  padding-left: var(--s-1);
+  list-style: none;
+}
+
+.doc li {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 7px;
+}
+
+.doc li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.72em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.doc strong {
+  font-weight: 600;
+}
+
+.doc em {
+  color: var(--text-2);
+}

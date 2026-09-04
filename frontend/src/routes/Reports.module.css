@@ -1,0 +1,51 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.grid {
+  display: grid;
+  /* a column count the cards actually fill, so nothing stretches over dead
+     space or sits alone on the last row */
+  grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+  gap: var(--s-4);
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  min-height: 132px;
+}
+
+.pager {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: flex-end;
+}
+
+.error {
+  color: var(--failed);
+  font-size: 14px;
+}

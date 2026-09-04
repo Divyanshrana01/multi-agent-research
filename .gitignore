@@ -17,3 +17,7 @@ venv/
 PHASES.md
 interview-prep.html
 FILES.md
+
+# frontend build artefacts
+frontend/node_modules/
+frontend/dist/

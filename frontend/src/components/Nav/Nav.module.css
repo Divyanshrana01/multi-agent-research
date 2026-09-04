@@ -1,0 +1,130 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 58px;
+  padding: 0 var(--s-5);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+
+.mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.name {
+  font-weight: 550;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+}
+
+.links {
+  display: flex;
+  gap: var(--s-1);
+  margin-left: var(--s-4);
+}
+
+.link {
+  padding: 7px var(--s-3);
+  border-radius: var(--r-control);
+  color: var(--text-2);
+  font-size: 14px;
+  text-decoration: none;
+  transition:
+    color var(--t-fast),
+    background var(--t-fast);
+}
+
+.link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.active {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.lamps {
+  display: flex;
+  gap: var(--s-4);
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.lamp {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.bulb {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--text-3);
+}
+
+.bulb[data-state="ok"] {
+  background: var(--done);
+  box-shadow: 0 0 0 3px var(--done-soft);
+}
+
+.bulb[data-state="degraded"] {
+  background: var(--run);
+  box-shadow: 0 0 0 3px var(--run-soft);
+}
+
+.themeBtn {
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--text-2);
+  border-radius: var(--r-control);
+  padding: 6px 11px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.themeBtn:hover {
+  color: var(--text);
+  border-color: var(--text-3);
+}
+
+@media (max-width: 760px) {
+  .bar {
+    padding: 0 var(--s-4);
+    gap: var(--s-2);
+  }
+
+  .name,
+  .lamps {
+    display: none;
+  }
+
+  .links {
+    margin-left: var(--s-1);
+  }
+
+  .themeBtn {
+    margin-left: auto;
+  }
+}
