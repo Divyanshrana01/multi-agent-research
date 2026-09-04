@@ -224,7 +224,6 @@ async def lifespan(app: FastAPI):
     await init_pool(config)
     await db_migrate(config)  # creates the reports table/indexes if they don't exist
     graph = build_graph(config)
-    app.state.config = config
     worker = _spawn(_worker_loop(), "worker-loop")  # runs in the same process as the API
     logger.info("Startup complete")
 
@@ -243,6 +242,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Research Agent API", lifespan=lifespan)
+# set here rather than inside lifespan, because require_api_key reads it. if it
+# only existed after startup, any request arriving during a failed or partial
+# startup would raise AttributeError instead of a clean 401.
+app.state.config = config
 
 # every data endpoint lives under /api. that keeps the URL space clear for the
 # frontend's own routes (/reports, /settings), which the catch-all at the bottom
@@ -454,7 +457,13 @@ if DIST.is_dir():
 
     @app.get("/{full_path:path}")
     async def spa(full_path: str):
-        # any non-API path returns the app shell and lets react-router decide
+        # an /api path that got this far matched no endpoint above, so it's a
+        # typo or a removed route. answer 404 rather than handing back HTML,
+        # which would otherwise fail somewhere far from the actual mistake.
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="No such endpoint.")
+
+        # any other path returns the app shell and lets react-router decide
         # what to render, so refreshing on /reports/abc works like a real URL
         candidate = DIST / full_path
         if full_path and candidate.is_file():
