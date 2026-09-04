@@ -9,8 +9,8 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from app.config import Config
+from app.embeddings import embed
 from app.pool import get_pool
-from app.memory import _model  # reuse the same embedding model as long-term memory
 
 
 def generate_pdf(title: str, content: str) -> bytes:
@@ -18,7 +18,7 @@ def generate_pdf(title: str, content: str) -> bytes:
     # return the bytes straight to the API response
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    _, height = A4  # only the height matters, we position from the top down
     c.setFont("Helvetica-Bold", 16)
     c.drawString(50, height - 50, title[:80])  # cut long titles so they fit one line
     c.setFont("Helvetica", 10)
@@ -38,6 +38,12 @@ def generate_pdf(title: str, content: str) -> bytes:
     return buffer.read()
 
 
+# async wrapper for the above. rendering a long report takes long enough to
+# stall every other request, so it runs in a thread.
+async def generate_pdf_async(title: str, content: str) -> bytes:
+    return await asyncio.to_thread(generate_pdf, title, content)
+
+
 def generate_json_report(topic: str, report: str, report_id: str, created_at: datetime) -> dict:
     # checksum lets a caller tell if two reports are byte-for-byte the same
     # without comparing the whole text (md5 is fine here, it's not for security)
@@ -52,8 +58,8 @@ def generate_json_report(topic: str, report: str, report_id: str, created_at: da
 
 
 async def get_report_diff(config: Config, topic: str) -> str | None:
-    # encoding is CPU work, so run it in a thread to avoid blocking the event loop
-    embedding = await asyncio.to_thread(lambda: _model.encode(topic).tolist())
+    # encoding is CPU work, so it runs in a thread (see embeddings.py)
+    embedding = await embed(topic)
     pool = get_pool()
     async with pool.acquire() as conn:
         # <=> is pgvector's cosine distance, so 1 - distance = similarity.

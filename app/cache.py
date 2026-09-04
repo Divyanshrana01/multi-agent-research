@@ -2,12 +2,12 @@ import hashlib
 import json
 import numpy as np
 import redis.asyncio as aioredis
-from sentence_transformers import SentenceTransformer
 from app.config import Config
+from app.embeddings import embed
 
-# small local model that turns text into a list of numbers (an "embedding")
-# similar sentences end up with similar numbers, that's the whole trick here
-_model = SentenceTransformer("all-MiniLM-L6-v2")
+# the embedding model itself lives in app/embeddings.py so the whole app shares
+# one copy. similar sentences get similar numbers, that's the whole trick here.
+
 # we store two things in redis per cached query, so two key prefixes:
 # "semantic:" holds the actual answer, "emb:" holds the embedding of the question
 _CACHE_PREFIX = "semantic:"
@@ -18,11 +18,6 @@ _EMB_PREFIX = "emb:"
 # so this makes sure we always end up with a normal string either way
 def _as_str(value: bytes | str) -> str:
     return value.decode() if isinstance(value, bytes) else value
-
-
-# turns a piece of text into its embedding (list of numbers)
-def _embed(text: str) -> list:
-    return _model.encode(text).tolist()
 
 
 # compares our one question against ALL stored questions in one go
@@ -45,8 +40,10 @@ def _key_suffix(query: str) -> str:
 # looks for an old answer to a question that MEANS the same thing as this one
 # (not just exact same text) - saves us paying for the same llm call twice
 async def cache_get(redis: aioredis.Redis, config: Config, query: str) -> str | None:
-    # embed the new question so we can compare it to old ones
-    query_emb = _embed(query)
+    # embed the new question so we can compare it to old ones.
+    # awaited because encoding is CPU work that would otherwise block every
+    # other request while it runs.
+    query_emb = await embed(query)
 
     # grab the names of every stored embedding
     keys = [_as_str(key) async for key in redis.scan_iter(f"{_EMB_PREFIX}*")]
@@ -62,16 +59,23 @@ async def cache_get(redis: aioredis.Redis, config: Config, query: str) -> str | 
     if not found:
         return None
 
+    # a stored embedding from an older model version would have a different
+    # length and break the matrix, so only compare ones that still match
+    usable = [(key, vec) for key, vec in found if len(vec) == len(query_emb)]
+    if not usable:
+        return None
+
     # score every stored question at once, then take the closest one
-    scores = _cosine_similarities(query_emb, np.array([emb for _, emb in found]))
+    scores = _cosine_similarities(query_emb, np.array([vec for _, vec in usable]))
     best = int(np.argmax(scores))
 
     # closest one still isn't close enough? then we've never really been asked this
     if scores[best] < config.cache_similarity_threshold:
         return None
 
-    # swap the prefix to find the answer that goes with this embedding
-    cache_key = found[best][0].replace(_EMB_PREFIX, _CACHE_PREFIX)
+    # swap the prefix to find the answer that goes with this embedding.
+    # slicing rather than .replace() so we only touch the prefix.
+    cache_key = _CACHE_PREFIX + usable[best][0][len(_EMB_PREFIX):]
     answer = await redis.get(cache_key)
     # the answer could have expired too, even though its embedding survived
     return _as_str(answer) if answer is not None else None
@@ -81,6 +85,11 @@ async def cache_get(redis: aioredis.Redis, config: Config, query: str) -> str | 
 async def cache_set(redis: aioredis.Redis, config: Config, query: str, result: str) -> None:
     # same id for both keys (answer + embedding) so they stay paired up
     suffix = _key_suffix(query)
-    # setex = save with an expiry time, so old stuff clears itself out
-    await redis.setex(f"{_CACHE_PREFIX}{suffix}", config.cache_ttl, result)
-    await redis.setex(f"{_EMB_PREFIX}{suffix}", config.cache_ttl, json.dumps(_embed(query)))
+    query_emb = await embed(query)
+    # setex = save with an expiry time, so old stuff clears itself out.
+    # pipeline so both keys are written in one round trip and neither can be
+    # left behind on its own.
+    async with redis.pipeline(transaction=True) as pipe:
+        pipe.setex(f"{_CACHE_PREFIX}{suffix}", config.cache_ttl, result)
+        pipe.setex(f"{_EMB_PREFIX}{suffix}", config.cache_ttl, json.dumps(query_emb))
+        await pipe.execute()

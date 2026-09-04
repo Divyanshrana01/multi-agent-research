@@ -1,15 +1,13 @@
 import difflib
 import json
-import asyncio
 from datetime import datetime
 import redis.asyncio as aioredis
-from sentence_transformers import SentenceTransformer
 from app.config import Config
+from app.embeddings import embed
 from app.pool import get_pool
 
-# same little embedding model as the cache uses - turns text into numbers
-# so we can compare how similar two topics are
-_model = SentenceTransformer("all-MiniLM-L6-v2")
+# the embedding model lives in app/embeddings.py, shared with the cache, so
+# there's only one copy of the weights in memory
 
 
 # short-term memory (redis)
@@ -64,29 +62,35 @@ async def db_migrate(config: Config) -> None:
         # normal indexes so looking up by topic or by date is also quick
         await conn.execute("CREATE INDEX IF NOT EXISTS reports_topic_idx ON reports (topic)")
         await conn.execute("CREATE INDEX IF NOT EXISTS reports_created_idx ON reports (created_at DESC)")
+        # records which path answered the job (pipeline/cache/ltm) so the report
+        # library can show it. added separately because CREATE TABLE IF NOT EXISTS
+        # won't touch a table that already exists.
+        await conn.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS source TEXT")
 
 
 # saves a finished report so we can find it again later
-async def ltm_store(config: Config, topic: str, report: str, report_id: str) -> None:
-    # encoding is slow-ish and blocking, so run it in a thread to not freeze the app
-    embedding = await asyncio.to_thread(lambda: _model.encode(topic).tolist())
+async def ltm_store(config: Config, topic: str, report: str, report_id: str, source: str = "pipeline") -> None:
+    # encoding is slow-ish and blocking, so it runs in a thread (see embeddings.py)
+    embedding = await embed(topic)
     pool = get_pool()
     async with pool.acquire() as conn:
+        # created_at is left out on purpose so postgres fills it with its own
+        # NOW() - one clock for every row, whatever timezone the app runs in
         await conn.execute(
             """
-            INSERT INTO reports (id, topic, report, embedding, created_at)
+            INSERT INTO reports (id, topic, report, embedding, source)
             VALUES ($1, $2, $3, $4::vector, $5)
             ON CONFLICT (id) DO NOTHING
             """,
             # ON CONFLICT DO NOTHING = if we already saved this id, just skip it
-            report_id, topic, report, str(embedding), datetime.utcnow(),
+            report_id, topic, report, str(embedding), source,
         )
 
 
 # looks for a recent report about basically the SAME topic, so we can reuse it
 # instead of researching the whole thing again
 async def ltm_search(config: Config, topic: str) -> dict | None:
-    embedding = await asyncio.to_thread(lambda: _model.encode(topic).tolist())
+    embedding = await embed(topic)
     pool = get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -111,20 +115,66 @@ async def ltm_search_related(config: Config, topic: str) -> str | None:
     for the writer agent. Uses a lower threshold than ltm_search so it finds
     nearby topics rather than exact matches.
     """
-    embedding = await asyncio.to_thread(lambda: _model.encode(topic).tolist())
+    embedding = await embed(topic)
     pool = get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
             """
             SELECT report FROM reports
-            WHERE 1 - (embedding <=> $1::vector) BETWEEN 0.5 AND $2
+            WHERE created_at > NOW() - ($3 || ' days')::INTERVAL
+              AND 1 - (embedding <=> $1::vector) BETWEEN 0.5 AND $2
             ORDER BY created_at DESC LIMIT 1
             """,
             # BETWEEN 0.5 and (threshold - 0.01) = related but deliberately NOT
-            # close enough to count as the same topic
-            str(embedding), config.ltm_threshold - 0.01,
+            # close enough to count as the same topic. the date bound stops the
+            # writer being handed a years-old report as "prior research".
+            str(embedding), config.ltm_threshold - 0.01, str(config.ltm_related_days),
         )
         return row["report"] if row else None
+
+
+# lists reports for the library view. one row per topic (the newest), because
+# every cache hit re-stores the same report and the list would otherwise be
+# mostly duplicates.
+async def list_reports(limit: int = 24, before: datetime | None = None) -> list[dict]:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT id, topic, created_at, source,
+                   left(report, 220) AS preview,
+                   coalesce(array_length(regexp_split_to_array(btrim(report), '\\s+'), 1), 0)
+                       AS word_count
+            FROM (
+                SELECT DISTINCT ON (topic) id, topic, report, created_at, source
+                FROM reports
+                ORDER BY topic, created_at DESC
+            ) newest_per_topic
+            -- keyset pagination: "everything older than the last row you saw".
+            -- OFFSET would get slower the deeper you page.
+            WHERE ($1::timestamp IS NULL OR created_at < $1)
+            ORDER BY created_at DESC
+            LIMIT $2
+            """,
+            before, limit,
+        )
+        return [dict(row) for row in rows]
+
+
+# one full report for the detail view
+async def get_report(report_id: str) -> dict | None:
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT id, topic, report, created_at, source,
+                   coalesce(array_length(regexp_split_to_array(btrim(report), '\\s+'), 1), 0)
+                       AS word_count
+            FROM reports WHERE id = $1
+            """,
+            report_id,
+        )
+        return dict(row) if row else None
 
 
 # compares the two newest reports on a topic and shows what changed between them
