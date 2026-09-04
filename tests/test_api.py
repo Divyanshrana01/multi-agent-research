@@ -1,10 +1,11 @@
 # Tests for the API layer: request validation and how the rate limiter works
-# out who is calling. Importing app.main only works offline because conftest
-# sets LOCAL_CONFIG=1.
+# out who is calling. Importing these modules only works offline because
+# conftest sets LOCAL_CONFIG=1.
 
 import pytest
 from pydantic import ValidationError
-from app.main import ResearchRequest, BatchEvalRequest, _client_ip
+from app.api.schemas import ResearchRequest, BatchEvalRequest
+from app.runtime import client_ip
 
 
 class FakeRequest:
@@ -56,18 +57,18 @@ def test_client_ip_prefers_the_forwarded_header():
     # behind the ALB, request.client.host is the balancer, so without this every
     # user would share a single rate limit bucket
     request = FakeRequest({"X-Forwarded-For": "203.0.113.7"}, host="10.0.0.1")
-    assert _client_ip(request) == "203.0.113.7"
+    assert client_ip(request) == "203.0.113.7"
 
 
 def test_client_ip_takes_the_original_client_from_a_chain():
     request = FakeRequest({"X-Forwarded-For": "203.0.113.7, 70.41.3.18, 10.0.0.1"})
-    assert _client_ip(request) == "203.0.113.7"
+    assert client_ip(request) == "203.0.113.7"
 
 
 def test_client_ip_falls_back_to_the_socket():
-    assert _client_ip(FakeRequest(host="192.0.2.5")) == "192.0.2.5"
+    assert client_ip(FakeRequest(host="192.0.2.5")) == "192.0.2.5"
 
 
 def test_client_ip_handles_no_client_at_all():
     # happens for lifespan/test transports rather than real requests
-    assert _client_ip(FakeRequest(host=None)) == "unknown"
+    assert client_ip(FakeRequest(host=None)) == "unknown"

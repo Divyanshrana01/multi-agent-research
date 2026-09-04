@@ -20,8 +20,12 @@ AWS Bedrock Guardrails for content safety, deployed on ECS Fargate via Terraform
   overall quality), logged to LangSmith on every job
 - `app/output.py` — PDF and structured-JSON exports, plus diffing the last two reports
 - `app/embeddings.py` — one shared embedding model for the cache and long-term memory
-- `app/main.py` — the FastAPI entrypoint: `/research` queues a job and returns a job id,
-  a background worker runs the pipeline, the client polls `/result/{job_id}`
+- `app/main.py` — the FastAPI entrypoint. Only wiring: lifespan, CORS, routers
+- `app/api/` — one file per group of endpoints (research, reports, evaluation, system)
+- `app/worker.py` — the background worker: takes a job off the stream, tries the cache,
+  then long-term memory, then the full agent run
+- `app/runtime.py` — the shared Redis client, agent graph and config, plus the rate limiter
+- `app/spa.py` — serves the built frontend and the client-side routes
 - `frontend/` — React + TypeScript app (Vite): the live pipeline, a browsable report
   library, judge scores, and Redis stats. Light and dark themes.
 - `terraform/main.tf` — infra: VPC, ECS Fargate, RDS Postgres, ElastiCache Redis,

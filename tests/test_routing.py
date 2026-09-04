@@ -6,7 +6,8 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app, DIST
+from app.main import app
+from app.spa import DIST
 
 # raise_server_exceptions=False so a handler that needs the database returns a
 # 500 response here instead of exploding the test — these tests only care about
