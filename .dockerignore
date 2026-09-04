@@ -1,0 +1,18 @@
+# never ship these into the build context
+.git/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+frontend/node_modules/
+frontend/dist/
+tests/
+terraform/
+.env
+*.pdf
+PHASES.md
+FILES.md
+interview-prep.html
+.remember/
