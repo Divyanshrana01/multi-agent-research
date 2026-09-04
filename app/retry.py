@@ -8,6 +8,10 @@ logger = logging.getLogger(__name__)
 # wait time doubles (backoff) each retry so we don't spam whatever we're calling
 async def with_retry(coro_fn, max_retries: int = 3, delay: float = 1.0, backoff: float = 2.0):
     """Call coro_fn() with exponential backoff. Raises the last exception if all retries fail."""
+    if max_retries < 1:
+        # otherwise the loop never runs and we'd fall through to "raise None"
+        raise ValueError("max_retries must be at least 1")
+
     last_exc = None  # keep track of the last error so we can raise it if everything fails
     wait = delay  # how long to sleep before next retry, grows every attempt
     for attempt in range(1, max_retries + 1):
